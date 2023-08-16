@@ -6,6 +6,7 @@ import { util } from "../helpers/util.ts";
 import * as z from "../index.ts";
 
 const minTwo = z.string().array().min(2);
+const minTwoEmpty = z.string().array().nonempty().min(2);
 const maxTwo = z.string().array().max(2);
 const justTwo = z.string().array().length(2);
 const intNum = z.string().array().nonempty();
@@ -15,10 +16,13 @@ type t1 = z.infer<typeof nonEmptyMax>;
 util.assertEqual<[string, ...string[]], t1>(true);
 
 type t2 = z.infer<typeof minTwo>;
-util.assertEqual<[string, string, ...string[]], t2>(true);
+util.assertEqual<string[], t2>(true);
 
-type t3 = z.infer<typeof justTwo>;
-util.assertEqual<[string, string], t3>(true);
+type t3 = z.infer<typeof minTwoEmpty>;
+util.assertEqual<[string, string, ...string[]], t3>(true);
+
+type t4 = z.infer<typeof justTwo>;
+util.assertEqual<[string, string], t4>(true);
 
 test("passing validations", () => {
   minTwo.parse(["a", "a"]);

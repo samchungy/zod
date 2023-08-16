@@ -1995,7 +1995,7 @@ export type arrayOutputType<
 export class ZodArray<
   T extends ZodTypeAny,
   Cardinality extends ArrayCardinality = "many",
-  CardinalityAmount extends number = 0
+  CardinalityAmount extends number = 1
 > extends ZodType<
   arrayOutputType<T, Cardinality, CardinalityAmount>,
   ZodArrayDef<T>,
@@ -2092,7 +2092,7 @@ export class ZodArray<
   min<N extends number>(
     minLength: N,
     message?: errorUtil.ErrMessage
-  ): ZodArray<T, "atleast", N> {
+  ): ZodArray<T, Cardinality, N> {
     return new ZodArray({
       ...this._def,
       minLength: { value: minLength, message: errorUtil.toString(message) },
@@ -2116,7 +2116,9 @@ export class ZodArray<
     }) as any;
   }
 
-  nonempty(message?: errorUtil.ErrMessage): ZodArray<T, "atleast", 1> {
+  nonempty(
+    message?: errorUtil.ErrMessage
+  ): ZodArray<T, "atleast", CardinalityAmount> {
     return this.min(1, message) as any;
   }
 
