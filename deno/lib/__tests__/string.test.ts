@@ -469,6 +469,46 @@ test("datetime parsing", () => {
   ).toThrow();
 });
 
+test("datetime parsing - Leap years", () => {
+  const datetime = z.string().datetime();
+  expect(() => datetime.parse("2020-02-29T09:52:31.816Z")).not.toThrow();
+  expect(() => datetime.parse("2021-02-29T09:52:31.816Z")).toThrow();
+  expect(() => datetime.parse("1988-02-29T00:52:31.816Z")).not.toThrow();
+  expect(() => datetime.parse("1900-02-29T09:52:31.816Z")).toThrow();
+  expect(() => datetime.parse("2000-02-29T09:52:31.816Z")).not.toThrow();
+  expect(() => datetime.parse("2100-02-29T09:52:31.816Z")).toThrow();
+
+});
+
+test("datetime parsing - Months with 30 days", () => {
+  const datetime = z.string().datetime();
+  const months = ["04", "06", "09", "11"]
+  months.forEach((month) => {
+    expect(() => datetime.parse(`2020-${month}-31T09:52:31.816Z`)).toThrow();
+    expect(() => datetime.parse(`2020-${month}-00T09:52:31.816Z`)).toThrow();
+    expect(() => datetime.parse(`2020-${month}-30T09:52:31.816Z`)).not.toThrow();
+  })
+});
+
+test("datetime parsing - Months with 31 days", () => {
+  const datetime = z.string().datetime();
+  const months = ["01", "03", "05", "07", "08", "10", "12"]
+  months.forEach((month) => {
+    expect(() => datetime.parse(`2020-${month}-00T09:52:31.816Z`)).toThrow();
+    expect(() => datetime.parse(`2020-${month}-32T09:52:31.816Z`)).toThrow();
+    expect(() => datetime.parse(`2020-${month}-31T09:52:31.816Z`)).not.toThrow();
+  })
+});
+
+test("datetime parsing - Time checking", () => {
+  const datetime = z.string().datetime();
+  expect(() => datetime.parse("2020-03-29T12:34:56.789Z")).not.toThrow();
+  expect(() => datetime.parse("2020-03-29T25:34:56.789Z")).toThrow();
+  expect(() => datetime.parse("2020-03-29T12:60:56.789Z")).toThrow();
+  expect(() => datetime.parse("2020-03-29T12:34:60.789Z")).toThrow();
+
+});
+
 test("IP validation", () => {
   const ip = z.string().ip();
   expect(ip.safeParse("122.122.122.122").success).toBe(true);

@@ -115,11 +115,11 @@ const handleResult = <Input, Output>(
 
 export type RawCreateParams =
   | {
-      errorMap?: ZodErrorMap;
-      invalid_type_error?: string;
-      required_error?: string;
-      description?: string;
-    }
+    errorMap?: ZodErrorMap;
+    invalid_type_error?: string;
+    required_error?: string;
+    description?: string;
+  }
   | undefined;
 export type ProcessedCreateParams = {
   errorMap?: ZodErrorMap;
@@ -532,11 +532,11 @@ export type ZodStringCheck =
   | { kind: "toLowerCase"; message?: string }
   | { kind: "toUpperCase"; message?: string }
   | {
-      kind: "datetime";
-      offset: boolean;
-      precision: number | null;
-      message?: string;
-    }
+    kind: "datetime";
+    offset: boolean;
+    precision: number | null;
+    message?: string;
+  }
   | { kind: "ip"; version?: IpVersion; message?: string };
 
 export interface ZodStringDef extends ZodTypeDef {
@@ -611,9 +611,45 @@ const datetimeRegex = (args: { precision: number | null; offset: boolean }) => {
   }
 };
 
+const isValidDayForMonth = (str: string) => {
+  const [year, month, day] = str
+    .split("T")[0]
+    .split("-")
+    .map((n) => Number(n));
+
+  // Most months have 31 days except for September, April, June and November
+  // who all have 30. Exception is February which has 28 or 29 depending if
+  //  its a leap year (which can be checked by seeing year is divisable by 4)
+  let dayLimit = 31;
+  if ([4, 6, 9, 11].includes(month)) {
+    dayLimit = 30
+  }
+
+  if (month === 2) {
+    dayLimit = 28
+    const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    if (isLeapYear) {
+      dayLimit = 29;
+    }
+  }
+
+  return day >= 1 && day <= dayLimit;
+};
+
+const isValidTime = (str: string) => {
+  const [hour, minute, secondsWithMilliseonds] = str
+    .split("T")[1]
+    .split(":")
+
+  const second = secondsWithMilliseonds.substring(0, 2)
+  return Number(hour) < 24 && Number(minute) < 60 && Number(second) < 60
+
+}
+
 const isValidDate = (str: string) => {
+  const validDayForMonth = isValidDayForMonth(str);
   const date = new Date(str);
-  return !isNaN(date.getTime());
+  return !isNaN(date.getTime()) && validDayForMonth;
 };
 
 function isValidIP(ip: string, version?: IpVersion) {
@@ -827,7 +863,7 @@ export class ZodString extends ZodType<string, ZodStringDef> {
       } else if (check.kind === "datetime") {
         const regex = datetimeRegex(check);
 
-        if (!regex.test(input.data) || !isValidDate(input.data)) {
+        if (!regex.test(input.data) || !isValidDate(input.data) || !isValidTime(input.data)) {
           ctx = this._getOrReturnCtx(input, ctx);
           addIssueToContext(ctx, {
             code: ZodIssueCode.invalid_string,
@@ -902,10 +938,10 @@ export class ZodString extends ZodType<string, ZodStringDef> {
     options?:
       | string
       | {
-          message?: string | undefined;
-          precision?: number | null;
-          offset?: boolean;
-        }
+        message?: string | undefined;
+        precision?: number | null;
+        offset?: boolean;
+      }
   ) {
     if (typeof options === "string") {
       return this._addCheck({
@@ -1997,8 +2033,8 @@ export class ZodArray<
   arrayOutputType<T, Cardinality>,
   ZodArrayDef<T>,
   Cardinality extends "atleastone"
-    ? [T["_input"], ...T["_input"][]]
-    : T["_input"][]
+  ? [T["_input"], ...T["_input"][]]
+  : T["_input"][]
 > {
   _parse(input: ParseInput): ParseReturnType<this["_output"]> {
     const { ctx, status } = this._processInputParams(input);
@@ -2149,10 +2185,10 @@ export interface ZodObjectDef<
 
 export type mergeTypes<A, B> = {
   [k in keyof A | keyof B]: k extends keyof B
-    ? B[k]
-    : k extends keyof A
-    ? A[k]
-    : never;
+  ? B[k]
+  : k extends keyof A
+  ? A[k]
+  : never;
 };
 
 export type objectOutputType<
@@ -2372,18 +2408,18 @@ export class ZodObject<
       unknownKeys: "strict",
       ...(message !== undefined
         ? {
-            errorMap: (issue, ctx) => {
-              const defaultError =
-                this._def.errorMap?.(issue, ctx).message ?? ctx.defaultError;
-              if (issue.code === "unrecognized_keys")
-                return {
-                  message: errorUtil.errToObj(message).message ?? defaultError,
-                };
+          errorMap: (issue, ctx) => {
+            const defaultError =
+              this._def.errorMap?.(issue, ctx).message ?? ctx.defaultError;
+            if (issue.code === "unrecognized_keys")
               return {
-                message: defaultError,
+                message: errorUtil.errToObj(message).message ?? defaultError,
               };
-            },
-          }
+            return {
+              message: defaultError,
+            };
+          },
+        }
         : {}),
     }) as any;
   }
@@ -3969,8 +4005,8 @@ export type FilterEnum<Values, ToExclude> = Values extends []
   ? []
   : Values extends [infer Head, ...infer Rest]
   ? Head extends ToExclude
-    ? FilterEnum<Rest, ToExclude>
-    : [Head, ...FilterEnum<Rest, ToExclude>]
+  ? FilterEnum<Rest, ToExclude>
+  : [Head, ...FilterEnum<Rest, ToExclude>]
   : never;
 
 export type typecast<A, T> = A extends T ? A : never;
@@ -4087,7 +4123,7 @@ export interface ZodNativeEnumDef<T extends EnumLike = EnumLike>
   typeName: ZodFirstPartyTypeKind.ZodNativeEnum;
 }
 
-export type EnumLike = { [k: string]: string | number; [nu: number]: string };
+export type EnumLike = { [k: string]: string | number;[nu: number]: string };
 
 export class ZodNativeEnum<T extends EnumLike> extends ZodType<
   T[keyof T],
@@ -4596,11 +4632,11 @@ export class ZodCatch<T extends ZodTypeAny> extends ZodType<
             result.status === "valid"
               ? result.value
               : this._def.catchValue({
-                  get error() {
-                    return new ZodError(newCtx.common.issues);
-                  },
-                  input: newCtx.data,
-                }),
+                get error() {
+                  return new ZodError(newCtx.common.issues);
+                },
+                input: newCtx.data,
+              }),
         };
       });
     } else {
@@ -4610,11 +4646,11 @@ export class ZodCatch<T extends ZodTypeAny> extends ZodType<
           result.status === "valid"
             ? result.value
             : this._def.catchValue({
-                get error() {
-                  return new ZodError(newCtx.common.issues);
-                },
-                input: newCtx.data,
-              }),
+              get error() {
+                return new ZodError(newCtx.common.issues);
+              },
+              input: newCtx.data,
+            }),
       };
     }
   }
@@ -4877,8 +4913,8 @@ export const custom = <T>(
           typeof params === "function"
             ? params(data)
             : typeof params === "string"
-            ? { message: params }
-            : params;
+              ? { message: params }
+              : params;
         const _fatal = p.fatal ?? fatal ?? true;
         const p2 = typeof p === "string" ? { message: p } : p;
         ctx.addIssue({ code: "custom", ...p2, fatal: _fatal });
@@ -4969,7 +5005,7 @@ export type ZodFirstPartySchemaTypes =
 
 // requires TS 4.4+
 abstract class Class {
-  constructor(..._: any[]) {}
+  constructor(..._: any[]) { }
 }
 const instanceOfType = <T extends typeof Class>(
   // const instanceOfType = <T extends new (...args: any[]) => any>(
